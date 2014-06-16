@@ -17,37 +17,47 @@ from Katana import Callbacks
 class KatanaEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
-
-        self.__created_qt_dialogs = []
-
         self.katana_log=logging.getLogger("Shotgun Katana Engine")
 
-        self._init_pyside()
+    def _define_qt_base(self):
+        """
+        Override to return the PyQt4 modules as provided by Katana.
+        
+        :return:    Dictionary containing the qt core & gui modules as well as the
+                    class to use for the base of all dialogs.
+        """
+        # proxy class used when QT does not exist on the system.
+        # this will raise an exception when any QT code tries to use it
+        class QTProxy(object):
+            def __getattr__(self, name):
+                raise tank.TankError("Looks like you are trying to run an App that uses a QT "
+                                     "based UI, however the Katana engine could not find a PyQt "
+                                     "installation!")
 
-
-    def _init_pyside(self):
+        base = {"qt_core": QTProxy(), "qt_gui": QTProxy(), "dialog_base": None}
+    
         try:
-            from PySide import QtGui
-        except:
-            # fine, we don't expect pyside to be present just yet
-            self.log_debug("PySide not detected - it will be added to the setup now...")
-        else:
-            # looks like pyside is already working! No need to do anything
-            self.log_debug("PySide detected - the existing version will be used.")
-            return
-
-        if sys.platform == "linux2":
-            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_qt471_linux", "python")
-            sys.path.append(pyside_path)
-
-        else:
-            self.log_error("Unknown platform - cannot initialize PySide!")
-
-        try:
-            from PySide import QtGui
+            from PyQt4 import QtCore, QtGui
+            import PyQt4
+    
+            # hot patch the library to make it work with pyside code
+            QtCore.Signal = QtCore.pyqtSignal
+            QtCore.Slot = QtCore.pyqtSlot
+            QtCore.Property = QtCore.pyqtProperty
+            base["qt_core"] = QtCore
+            base["qt_gui"] = QtGui
+            base["dialog_base"] = QtGui.QDialog
+            self.log_debug("Successfully initialized PyQt '%s' located in %s."
+                           % (QtCore.PYQT_VERSION_STR, PyQt4.__file__))
+        except ImportError:
+            pass
         except Exception, e:
-            self.log_error("PySide could not be imported! Apps using pyside will not "
-                           "operate correctly! Error reported: %s" % e)
+            import traceback
+            self.log_warning("Error setting up PyQt. PyQt based UI support "
+                             "will not be available: %s" % e)
+            self.log_debug(traceback.format_exc())    
+            
+        return base
 
     def add_katana_menu(self, objectHash):
 
@@ -65,41 +75,13 @@ class KatanaEngine(tank.platform.Engine):
 
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
-
-        tk_katana = self.import_module("tk_katana")
-        bootstrap = tk_katana.bootstrap
-        if bootstrap.g_temp_env in os.environ:
-            # clean up and keep on going
-            shutil.rmtree(os.environ[bootstrap.g_temp_env])
-
-    def _create_dialog(self, title, bundle, obj):
-        from tank.platform.qt import tankqdialog
-
-        dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
-        dialog.raise_()
-        dialog.activateWindow()
-
-        # get windows to raise the dialog
-        if sys.platform == "win32":
-            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-            hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
-            ctypes.windll.user32.SetActiveWindow(hwnd)
-
-        return dialog
-
-    def show_modal(self, title, bundle, widget_class, *args, **kwargs):
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        status = dialog.exec_()
-        return status, obj
-
-    def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        self.__created_qt_dialogs.append(dialog)
-        dialog.show()
-        return obj
+        
+        # (AD) - not sure what this is for?
+        #tk_katana = self.import_module("tk_katana")
+        #bootstrap = tk_katana.bootstrap
+        #if bootstrap.g_temp_env in os.environ:
+        #    # clean up and keep on going
+        #    shutil.rmtree(os.environ[bootstrap.g_temp_env])
 
     def _display_message(self, msg):
         self.log_info(msg)
