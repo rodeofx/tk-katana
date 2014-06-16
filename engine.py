@@ -70,11 +70,11 @@ class KatanaEngine(tank.platform.Engine):
         self._menu_generator.create_menu()
 
     def post_app_init(self):
-
         Callbacks.addCallback(Callbacks.Type.onStartupComplete, self.add_katana_menu)
 
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
+
         
         # (AD) - not sure what this is for?
         #tk_katana = self.import_module("tk_katana")
@@ -82,6 +82,36 @@ class KatanaEngine(tank.platform.Engine):
         #if bootstrap.g_temp_env in os.environ:
         #    # clean up and keep on going
         #    shutil.rmtree(os.environ[bootstrap.g_temp_env])
+
+
+    # def _create_dialog(self, title, bundle, obj):
+    #     from tank.platform.qt import tankqdialog
+    #
+    #     dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
+    #     dialog.raise_()
+    #     dialog.activateWindow()
+    #
+    #     # get windows to raise the dialog
+    #     if sys.platform == "win32":
+    #         ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+    #         ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
+    #         hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+    #         ctypes.windll.user32.SetActiveWindow(hwnd)
+    #
+    #     return dialog
+    #
+    # def show_modal(self, title, bundle, widget_class, *args, **kwargs):
+    #     obj = widget_class(*args, **kwargs)
+    #     dialog = self._create_dialog(title, bundle, obj)
+    #     status = dialog.exec_()
+    #     return status, obj
+    #
+    # def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
+    #     obj = widget_class(*args, **kwargs)
+    #     dialog = self._create_dialog(title, bundle, obj)
+    #     self.__created_qt_dialogs.append(dialog)
+    #     dialog.show()
+    #     return obj
 
     def _display_message(self, msg):
         self.log_info(msg)
