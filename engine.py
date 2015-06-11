@@ -10,6 +10,7 @@ import sys
 import ctypes
 import shutil
 import logging
+import traceback
 
 import tank
 from Katana import Callbacks
@@ -66,9 +67,12 @@ class KatanaEngine(tank.platform.Engine):
             menu_name = "Sgtk"
         tk_katana = self.import_module("tk_katana")
         self.katana_log.info("Start creating shotgun menu.")
-        self._menu_generator = tk_katana.MenuGenerator(self, menu_name)
-        self._menu_generator.create_menu()
-
+        try:
+            self._menu_generator = tk_katana.MenuGenerator(self, menu_name)
+            self._menu_generator.create_menu()
+        except:
+            traceback.print_exc()
+            
     def post_app_init(self):
         Callbacks.addCallback(Callbacks.Type.onStartupComplete, self.add_katana_menu)
 

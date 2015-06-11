@@ -257,7 +257,13 @@ class AppCommand(object):
         if hot_key:
             action = QtGui.QAction(name, menu,triggered=cmd,icon=icon)
         else:
-            action = QtGui.QAction(name, menu,triggered=cmd,icon=icon)
+            new_icon=None
+            if icon:
+                new_icon=QtGui.QIcon(icon)
+                action = QtGui.QAction(name, menu,triggered=cmd,icon=new_icon)
+            else:
+                action = QtGui.QAction(name, menu,triggered=cmd)
+
         menu.addAction(action)
 
     def add_command_to_menu(self, menu):
@@ -267,5 +273,4 @@ class AppCommand(object):
         # std shotgun menu
         icon = self.properties.get("icon")
         hotkey = self.properties.get("hotkey")
-
         self.do_add_command(menu,self.name, self.callback, hot_key=hotkey, icon=icon)
