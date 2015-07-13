@@ -1,4 +1,2 @@
-tk-katana
-==========
-
-Tank Katana Engine
+# tk-katana
+katana engine
