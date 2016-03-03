@@ -15,18 +15,17 @@ class MenuGenerator(object):
 
     def create_menu(self):
         """ Create the Shotgun Menu """
+        # Get the shotgun menu
+        self.root_menu = self.__get_or_create_root_menu( self._menu_name )
+        self.populate_menu()
 
-        mainMenu = self.__get_katana_main_menu()
-        if not mainMenu:
-            return
-
-        self.root_menu = QtGui.QMenu(self._menu_name, mainMenu)
+    def populate_menu(self):
+        '''
+        Populate the menu with contents defined by the current context.
+        '''
         self.root_menu.clear()
 
-        #add shotgun menu to main menu
-        mainMenu.addMenu(self.root_menu)
-
-        #'surfacing, Assets chair' menu
+        # 'surfacing, Assets chair' menu
         menu_handle = self.root_menu
 
         # now add the context item on top of the main menu
@@ -79,7 +78,29 @@ class MenuGenerator(object):
         # now add all apps to main menu
         self._add_app_menu(commands_by_app, menu_handle)
 
-    def __get_katana_main_menu(self):
+
+    @classmethod
+    def __get_or_create_root_menu(cls, menu_name):
+        '''
+        Attempts to find an existing menu of the specified title. If it can't be
+        found, it creates one.
+        '''
+        # Get the "main menu" (the bar of menus)
+        main_menu = cls.__get_katana_main_menu()
+        if not main_menu:
+            return
+        # Attempt to find existing menu
+        for menu in main_menu.children():
+            if type(menu).__name__ == "QMenu" and menu.title() == menu_name:
+                return menu
+        # Otherwise, create a new menu
+        menu = QtGui.QMenu(menu_name, main_menu)
+        main_menu.addMenu(menu)
+        return menu
+
+
+    @classmethod
+    def __get_katana_main_menu(cls):
 
         layoutsMenus = [x for x in QtGui.qApp.topLevelWidgets() if type(x).__name__ == 'LayoutsMenu']
 

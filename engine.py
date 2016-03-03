@@ -60,7 +60,7 @@ class KatanaEngine(tank.platform.Engine):
             
         return base
 
-    def add_katana_menu(self, objectHash):
+    def add_katana_menu(self, objectHash=None):
 
         menu_name = "Shotgun"
         if self.get_setting("use_sgtk_as_menu_name", False):
@@ -72,7 +72,14 @@ class KatanaEngine(tank.platform.Engine):
             self._menu_generator.create_menu()
         except:
             traceback.print_exc()
-            
+
+    def update_katana_menu(self):
+        '''
+        Refresh the Katana menu for the current context.
+        '''
+        self.katana_log.info("Updating shotgun menu.")
+        self._menu_generator.populate_menu()
+
     def post_app_init(self):
         Callbacks.addCallback(Callbacks.Type.onStartupComplete, self.add_katana_menu)
 
