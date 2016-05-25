@@ -36,6 +36,7 @@ class KatanaEngine(tank.platform.Engine):
 
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
+        os.environ["TANK_KATANA_ENGINE_INIT_NAME"] = self.instance_name
 
     def _define_qt_base(self):
         """
@@ -87,6 +88,15 @@ class KatanaEngine(tank.platform.Engine):
         tk_katana = self.import_module("tk_katana")
         self._menu_generator = tk_katana.MenuGenerator(self, menu_name)
         self._menu_generator.create_menu()
+
+    def pre_app_init(self):
+        """
+        Called at startup.
+        """
+        tk_katana = self.import_module("tk_katana")
+
+        # Make sure callbacks tracking the context switching are active.
+        tk_katana.tank_ensure_callbacks_registered()
 
     def post_app_init(self):
         if self.has_ui:

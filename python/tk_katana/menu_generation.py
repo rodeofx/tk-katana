@@ -41,7 +41,7 @@ class MenuGenerator(object):
         Create the Shotgun Menu.
         """
         # Get the shotgun menu
-        self.root_menu = self.__get_or_create_root_menu(self.menu_name)
+        self.root_menu = self.get_or_create_root_menu(self.menu_name)
 
         # 'surfacing, Assets chair' menu
         menu_handle = self.root_menu
@@ -96,7 +96,7 @@ class MenuGenerator(object):
         self._add_app_menu(commands_by_app, menu_handle)
 
     @classmethod
-    def __get_or_create_root_menu(cls, menu_name):
+    def get_or_create_root_menu(cls, menu_name):
         """
         Attempts to find an existing menu of the specified title. If it can't be
         found, it creates one.
