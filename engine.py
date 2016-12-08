@@ -9,8 +9,6 @@ import os
 import sys
 import traceback
 
-from PyQt4 import QtGui
-
 import sgtk
 import tank
 import tank.context
@@ -161,7 +159,7 @@ class KatanaEngine(tank.platform.Engine):
         assetPreferredTask = 'Shading'
         tc = taskChooser.TaskChooser(context, taskNames, shotPreferredTask, assetPreferredTask)
         status = tc.exec_()
-        if status == QtGui.QDialog.Rejected:
+        if status == 0: # value of PyQt4.QtGui.QDialog.Rejected. We do not want to import that module at this point.
             self.log_error("No Context Chosen. Exiting...")
             sys.exit(-1)
         task = tc.getSelectedTask()
