@@ -9,7 +9,6 @@ import os
 import sys
 import traceback
 
-import sgtk
 import tank
 import tank.context
 import tank.platform
@@ -22,6 +21,10 @@ from Katana import Callbacks
 class KatanaEngine(tank.platform.Engine):
     """
     An engine that supports Katana.
+    For the moment, with our version of the core, there is no way to switch contexts without destroying the engine.
+    Since we want to enforce a proper context on launch, and we do not want to have to init an engine with a non
+    conform context, destroy it and recreate it with a proper one, we need to enforce a proper context before calling
+    super(KatanaEngine, self).__init__(*args, **kwargs). Hence, newContext = self.validate_context(tank, context)
     """
 
     def __init__(self, *args, **kwargs):
