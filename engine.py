@@ -7,12 +7,12 @@ A Katana engine for Tank.
 """
 import os
 import sys
-import ctypes
-import shutil
-import logging
 import traceback
 
 import tank
+import tank.context
+import tank.platform
+from rdokatana.taskChooser import taskChooser
 
 from Katana import Configuration
 from Katana import Callbacks
@@ -21,10 +21,21 @@ from Katana import Callbacks
 class KatanaEngine(tank.platform.Engine):
     """
     An engine that supports Katana.
+    For the moment, with our version of the core, there is no way to switch contexts without destroying the engine.
+    Since we want to enforce a proper context on launch, and we do not want to have to init an engine with a non
+    conform context, destroy it and recreate it with a proper one, we need to enforce a proper context before calling
+    super(KatanaEngine, self).__init__(*args, **kwargs). Hence, newContext = self.validate_context(tank, context)
     """
 
     def __init__(self, *args, **kwargs):
         self._ui_enabled = Configuration.get('KATANA_UI_MODE')
+        tank = args[0]
+        context = args[1]
+        # if the context is not set properly, forces the user to set it before launching the engine.
+        newContext = self.validate_context(tank, context)
+        tmp = list(args)
+        tmp[1] = newContext
+        args = tuple(tmp)
         super(KatanaEngine, self).__init__(*args, **kwargs)
 
     @property
@@ -95,8 +106,6 @@ class KatanaEngine(tank.platform.Engine):
         """
         tk_katana = self.import_module("tk_katana")
 
-        # Make sure callbacks tracking the context switching are active.
-        tk_katana.tank_ensure_callbacks_registered()
 
     def post_app_init(self):
         if self.has_ui:
@@ -107,6 +116,57 @@ class KatanaEngine(tank.platform.Engine):
                 Callbacks.addCallback(Callbacks.Type.onStartupComplete, self.add_katana_menu)
             except:
                 traceback.print_exc()
+
+    def validate_context(self, tank, context):
+        '''
+        Given the context provided at initialisation, if we're in a project context only, forces the user to select
+        a proper task context using rdokatana.taskChooser.taskChooser.TaskChooser.
+        :param tank: a Tank object instance.
+        :type tank: :class:`sgtk.tank.Tank`
+        :param context: the current context.
+        :type context: :class:`tank.context.Context`
+        :return: a proper working context.
+        :rtype: :class:`tank.context.Context`
+        '''
+        if context.project:
+            if not context.entity:
+                task = self.select_task_ui(context)
+                newContext = tank.context_from_entity('Task', task['id'])
+                return newContext
+            elif context.entity and not context.task:
+                filters = [
+                    ['project', 'is', context.project],
+                    ['entity', 'is', context.entity],
+                ]
+                task = None
+                if context.entity['type'] == 'Shot':
+                    filters.append(['content', 'is', 'Lighting'])
+                    task = tank.shotgun.find_one("Task", filters)
+                elif context.entity['type'] == 'Asset':
+                    filters.append(['content', 'is', 'Shading'])
+                    task = tank.shotgun.find_one("Task", filters)
+                if task:
+                    newContext = tank.context_from_entity('Task', task['id'])
+                    return newContext
+                else:
+                    task = self.select_task_ui(context)
+                    newContext = tank.context_from_entity('Task', task['id'])
+                    return newContext
+            else:
+                return context
+        return context
+
+    def select_task_ui(self, context):
+        taskNames = ['Lighting', 'Shading', 'FX']
+        shotPreferredTask = 'Lighting'
+        assetPreferredTask = 'Shading'
+        tc = taskChooser.TaskChooser(context, taskNames, shotPreferredTask, assetPreferredTask)
+        status = tc.exec_()
+        if status == 0: # value of PyQt4.QtGui.QDialog.Rejected. We do not want to import that module at this point.
+            self.log_error("No Context Chosen. Exiting...")
+            sys.exit(-1)
+        task = tc.getSelectedTask()
+        return task
 
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
