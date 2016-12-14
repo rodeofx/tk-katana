@@ -8,6 +8,7 @@ A Katana engine for Tank.
 import os
 import sys
 import traceback
+import getpass
 
 import tank
 import tank.context
@@ -130,43 +131,70 @@ class KatanaEngine(tank.platform.Engine):
         '''
         if context.project:
             if not context.entity:
-                task = self.select_task_ui(context)
-                newContext = tank.context_from_entity('Task', task['id'])
+                newContext = self.userChosenContext(tank, context)
                 return newContext
             elif context.entity and not context.task:
-                filters = [
-                    ['project', 'is', context.project],
-                    ['entity', 'is', context.entity],
-                ]
-                task = None
-                if context.entity['type'] == 'Shot':
-                    filters.append(['content', 'is', 'Lighting'])
-                    task = tank.shotgun.find_one("Task", filters)
-                elif context.entity['type'] == 'Asset':
-                    filters.append(['content', 'is', 'Shading'])
-                    task = tank.shotgun.find_one("Task", filters)
+                task = self.getTask(tank, context)
                 if task:
                     newContext = tank.context_from_entity('Task', task['id'])
                     return newContext
                 else:
-                    task = self.select_task_ui(context)
-                    newContext = tank.context_from_entity('Task', task['id'])
+                    newContext = self.userChosenContext(tank, context)
                     return newContext
             else:
                 return context
         return context
 
-    def select_task_ui(self, context):
-        taskNames = ['Lighting', 'Shading', 'FX']
-        shotPreferredTask = 'Lighting'
-        assetPreferredTask = 'Shading'
-        tc = taskChooser.TaskChooser(context, taskNames, shotPreferredTask, assetPreferredTask)
+    def getTask(self, tank, context):
+        stepShortName = ''
+        if context.entity['type'] == 'Shot':
+            stepShortName = 'Lgt'
+        elif context.entity['type'] == 'Asset':
+            stepShortName = 'Shd'
+        filters = [
+            ['project', 'is', context.project],
+            ['entity', 'is', context.entity],
+            ['step.Step.short_name', 'is', stepShortName]
+        ]
+        tasks = tank.shotgun.find("Task", filters, ['task_assignees'])
+        if not tasks:
+            return
+        if len(tasks) == 1:
+            return tasks[0]
+        task = self.getAssignedTask(tank, tasks)
+        return task
+
+    def getAssignedTask(self, tank, tasks):
+        userIds = []
+        for task in tasks:
+            userIds.extend([u['id'] for u in task['task_assignees']])
+
+        users = dict((p['id'], p['login']) for p in tank.shotgun.find("HumanUser", [['id', 'in', userIds]],
+                                                                ['login']))
+        currentUser = getpass.getuser()
+        if currentUser not in users.values():
+            return
+        tasksAssigned = []
+        for task in tasks:
+            userLogins = [users[u['id']] for u in task['task_assignees'] ]
+            if currentUser in userLogins:
+                tasksAssigned.append(task)
+        if not tasksAssigned or len(tasksAssigned) > 1:
+            return
+        else:
+            return tasksAssigned[0]
+
+
+    def userChosenContext(self, tank, context):
+        stepShortNames = ['Lgt', 'Shd', 'FX']
+        tc = taskChooser.TaskChooser(context, stepShortNames)
         status = tc.exec_()
         if status == 0: # value of PyQt4.QtGui.QDialog.Rejected. We do not want to import that module at this point.
             self.log_error("No Context Chosen. Exiting...")
             sys.exit(-1)
         task = tc.getSelectedTask()
-        return task
+        newContext = tank.context_from_entity('Task', task['id'])
+        return newContext
 
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
