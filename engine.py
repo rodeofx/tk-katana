@@ -130,7 +130,7 @@ class KatanaEngine(tank.platform.Engine):
         :rtype: :class:`tank.context.Context`
         '''
         if context.project:
-            if not context.entity:
+            if not context.entity and self._ui_enabled:
                 newContext = self.userChosenContext(tk, context)
                 return newContext
             elif context.entity and not context.task:
@@ -138,7 +138,7 @@ class KatanaEngine(tank.platform.Engine):
                 if task:
                     newContext = tk.context_from_entity('Task', task['id'])
                     return newContext
-                else:
+                elif self._ui_enabled:
                     newContext = self.userChosenContext(tk, context)
                     return newContext
             else:
