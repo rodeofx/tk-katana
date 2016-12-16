@@ -30,10 +30,10 @@ class KatanaEngine(tank.platform.Engine):
 
     def __init__(self, *args, **kwargs):
         self._ui_enabled = Configuration.get('KATANA_UI_MODE')
-        tank = args[0]
+        tk = args[0]
         context = args[1]
         # if the context is not set properly, forces the user to set it before launching the engine.
-        newContext = self.validate_context(tank, context)
+        newContext = self.validate_context(tk, context)
         tmp = list(args)
         tmp[1] = newContext
         args = tuple(tmp)
@@ -118,12 +118,12 @@ class KatanaEngine(tank.platform.Engine):
             except:
                 traceback.print_exc()
 
-    def validate_context(self, tank, context):
+    def validate_context(self, tk, context):
         '''
         Given the context provided at initialisation, if we're in a project context only, forces the user to select
         a proper task context using rdokatana.taskChooser.taskChooser.TaskChooser.
-        :param tank: a Tank object instance.
-        :type tank: :class:`sgtk.tank.Tank`
+        :param tk: a Tank object instance.
+        :type tk: :class:`sgtk.tank.Tank`
         :param context: the current context.
         :type context: :class:`tank.context.Context`
         :return: a proper working context.
@@ -131,21 +131,21 @@ class KatanaEngine(tank.platform.Engine):
         '''
         if context.project:
             if not context.entity:
-                newContext = self.userChosenContext(tank, context)
+                newContext = self.userChosenContext(tk, context)
                 return newContext
             elif context.entity and not context.task:
-                task = self.getTask(tank, context)
+                task = self.getTask(tk, context)
                 if task:
-                    newContext = tank.context_from_entity('Task', task['id'])
+                    newContext = tk.context_from_entity('Task', task['id'])
                     return newContext
                 else:
-                    newContext = self.userChosenContext(tank, context)
+                    newContext = self.userChosenContext(tk, context)
                     return newContext
             else:
                 return context
         return context
 
-    def getTask(self, tank, context):
+    def getTask(self, tk, context):
         stepShortName = ''
         if context.entity['type'] == 'Shot':
             stepShortName = 'Lgt'
@@ -156,20 +156,20 @@ class KatanaEngine(tank.platform.Engine):
             ['entity', 'is', context.entity],
             ['step.Step.short_name', 'is', stepShortName]
         ]
-        tasks = tank.shotgun.find("Task", filters, ['task_assignees'])
+        tasks = tk.shotgun.find("Task", filters, ['task_assignees'])
         if not tasks:
             return
         if len(tasks) == 1:
             return tasks[0]
-        task = self.getAssignedTask(tank, tasks)
+        task = self.getAssignedTask(tk, tasks)
         return task
 
-    def getAssignedTask(self, tank, tasks):
+    def getAssignedTask(self, tk, tasks):
         userIds = []
         for task in tasks:
             userIds.extend([u['id'] for u in task['task_assignees']])
 
-        users = dict((p['id'], p['login']) for p in tank.shotgun.find("HumanUser", [['id', 'in', userIds]],
+        users = dict((p['id'], p['login']) for p in tk.shotgun.find("HumanUser", [['id', 'in', userIds]],
                                                                 ['login']))
         currentUser = getpass.getuser()
         if currentUser not in users.values():
@@ -185,7 +185,7 @@ class KatanaEngine(tank.platform.Engine):
             return tasksAssigned[0]
 
 
-    def userChosenContext(self, tank, context):
+    def userChosenContext(self, tk, context):
         stepShortNames = ['Lgt', 'Shd', 'FX']
         tc = taskChooser.TaskChooser(context, stepShortNames)
         status = tc.exec_()
@@ -193,7 +193,7 @@ class KatanaEngine(tank.platform.Engine):
             self.log_error("No Context Chosen. Exiting...")
             sys.exit(-1)
         task = tc.getSelectedTask()
-        newContext = tank.context_from_entity('Task', task['id'])
+        newContext = tk.context_from_entity('Task', task['id'])
         return newContext
 
     def destroy_engine(self):
