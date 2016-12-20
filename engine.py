@@ -190,8 +190,8 @@ class KatanaEngine(tank.platform.Engine):
         tc = taskChooser.TaskChooser(context, stepShortNames)
         status = tc.exec_()
         if status == 0: # value of PyQt4.QtGui.QDialog.Rejected. We do not want to import that module at this point.
-            self.log_error("No Context Chosen. Exiting...")
-            sys.exit(-1)
+            self.log_error("No Context Chosen. At your own risk...")
+            return context
         task = tc.getSelectedTask()
         newContext = tk.context_from_entity('Task', task['id'])
         return newContext
