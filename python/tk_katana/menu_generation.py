@@ -279,14 +279,15 @@ class AppCommand(object):
 
     def do_add_command(self, menu, name, cmd, hot_key=None, icon=None):
         # TODO add hot key
+        cb = lambda: cmd()
         if hot_key:
-            action = QtGui.QAction(name, menu, triggered=cmd, icon=icon)
+            action = QtGui.QAction(name, menu, triggered=cb, icon=icon)
         else:
             if icon:
                 new_icon = QtGui.QIcon(icon)
-                action = QtGui.QAction(name, menu, triggered=cmd, icon=new_icon)
+                action = QtGui.QAction(name, menu, triggered=cb, icon=new_icon)
             else:
-                action = QtGui.QAction(name, menu, triggered=cmd)
+                action = QtGui.QAction(name, menu, triggered=cb)
         menu.addAction(action)
 
     def add_command_to_menu(self, menu):
