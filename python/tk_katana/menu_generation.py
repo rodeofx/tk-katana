@@ -279,14 +279,29 @@ class AppCommand(object):
 
     def do_add_command(self, menu, name, cmd, hot_key=None, icon=None):
         # TODO add hot key
+
+        # From the PyQt documentation:
+        # PySide.QtGui.QAction.triggered([checked = false])
+        # Parameters:    checked – PySide.QtCore.bool
+        # If your callback signature is cmd(*args), the signal sent will have an arg, False, which corresponds
+        # to the checked state of the menu item. But if it's cmd(), then it won't.
+        # since the apps registered commands are defined as wrappers, callback_wrapper(*args, **kwargs)
+        #  (see /rdo/rodeo/repositories/tank/studio/install/core/python/tank/platform/engine.py,
+        # register_command function), they will pass the False argument to the callbacks registered by the
+        # apps, for example for tk-multi-contextSwitcher:
+        # menu_callback = lambda : app_payload.contextSwitcher.show_dialog(self)
+        # this will fail since the callback does not take any arguments.
+        # By "wrapping the wrapper" with this lambda, the function attached to triggered has no args and
+        # everything works.
+        cb = lambda: cmd()
         if hot_key:
-            action = QtGui.QAction(name, menu, triggered=cmd, icon=icon)
+            action = QtGui.QAction(name, menu, triggered=cb, icon=icon)
         else:
             if icon:
                 new_icon = QtGui.QIcon(icon)
-                action = QtGui.QAction(name, menu, triggered=cmd, icon=new_icon)
+                action = QtGui.QAction(name, menu, triggered=cb, icon=new_icon)
             else:
-                action = QtGui.QAction(name, menu, triggered=cmd)
+                action = QtGui.QAction(name, menu, triggered=cb)
         menu.addAction(action)
 
     def add_command_to_menu(self, menu):
