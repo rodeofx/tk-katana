@@ -1,4 +1,4 @@
-#
+# -*- coding: utf-8 -*-
 # Copyright (c) 2013 Shotgun Software, Inc
 # ----------------------------------------------------
 #
@@ -282,7 +282,7 @@ class AppCommand(object):
 
         # From the PyQt documentation:
         # PySide.QtGui.QAction.triggered([checked = false])
-        # Parameters:    checked – PySide.QtCore.bool
+        # Parameters:    checked - PySide.QtCore.bool
         # If your callback signature is cmd(*args), the signal sent will have an arg, False, which corresponds
         # to the checked state of the menu item. But if it's cmd(), then it won't.
         # since the apps registered commands are defined as wrappers, callback_wrapper(*args, **kwargs)
