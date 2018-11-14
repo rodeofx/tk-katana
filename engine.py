@@ -186,7 +186,7 @@ class KatanaEngine(tank.platform.Engine):
 
 
     def userChosenContext(self, tk, context):
-        stepShortNames = ['Lgt', 'Shd', 'FX']
+        stepShortNames = ['Ani', 'CFX', 'Crowd', 'ENV', 'FX', 'Lay', 'Lgt', 'Model', 'Previs', 'Rig', 'Std', 'Shd', 'Tex']
         tc = taskChooser.TaskChooser(context, stepShortNames)
         status = tc.exec_()
         if status == 0: # value of PyQt4.QtGui.QDialog.Rejected. We do not want to import that module at this point.
